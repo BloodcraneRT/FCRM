@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: fin-terminal API
+  version: 0.1.0
+  description: >
+    Read-only API over fin-terminal's QuestDB signal/opportunity data and
+    SQLite watchlist metadata. Backs the web dashboard; safe to poll.
+servers:
+  - url: http://localhost:8081
+paths:
+  /healthz:
+    get:
+      summary: Liveness/readiness check (pings QuestDB)
+      responses:
+        "200": { description: OK }
+        "503": { description: QuestDB unreachable or degraded }
+  /api/v1/watchlist:
+    get:
+      summary: List watchlist items
+      parameters:
+        - name: list
+          in: query
+          schema: { type: string, default: default }
+      responses:
+        "200":
+          description: Watchlist items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    Symbol: { type: string }
+                    ListName: { type: string }
+                    Vertical: { type: string }
+                    Note: { type: string }
+                    AddedAt: { type: string, format: date-time }
+  /api/v1/opportunities:
+    get:
+      summary: Latest opportunity score per symbol, ranked by composite score
+      responses:
+        "200":
+          description: Opportunity scores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    symbol: { type: string }
+                    vertical: { type: string }
+                    composite_score: { type: number }
+                    evidence_quality: { type: number }
+                    timing_score: { type: number }
+                    practicality_score: { type: number }
+                    confidence: { type: string, enum: [low, medium, high] }
+                    explanation: { type: string }
+                    ts: { type: string, format: date-time }
+  /api/v1/sector-strength:
+    get:
+      summary: Latest sector/vertical strength scores
+      responses:
+        "200": { description: Sector strength rows }
+  /api/v1/catalysts:
+    get:
+      summary: Upcoming catalyst events (last day onward)
+      responses:
+        "200": { description: Catalyst events }
+  /api/v1/source-health:
+    get:
+      summary: Latest health snapshot per data connector
+      responses:
+        "200": { description: Source health rows }

@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  questdb:
+    image: questdb/questdb:8.2.1
+    container_name: fin-terminal-questdb
+    ports:
+      - "9000:9000"   # HTTP REST/SQL + web console
+      - "9009:9009"   # ILP ingest (line protocol)
+      - "8812:8812"   # Postgres wire protocol
+    volumes:
+      - questdb-data:/var/lib/questdb
+    environment:
+      - QDB_TELEMETRY_ENABLED=false
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.migrate
+    container_name: fin-terminal-migrate
+    depends_on:
+      - questdb
+    environment:
+      - QUESTDB_HTTP_ADDR=http://questdb:9000
+
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.worker
+    container_name: fin-terminal-worker
+    depends_on:
+      - migrate
+    environment:
+      - QUESTDB_HTTP_ADDR=http://questdb:9000
+      - SQLITE_PATH=/data/fin-terminal.db
+      - INGEST_INTERVAL=15m
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - SEC_EDGAR_USER_AGENT=${SEC_EDGAR_USER_AGENT:-fin-terminal you@example.com}
+    volumes:
+      - app-data:/data
+
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    container_name: fin-terminal-api
+    depends_on:
+      - migrate
+    ports:
+      - "8081:8081"
+    environment:
+      - QUESTDB_HTTP_ADDR=http://questdb:9000
+      - SQLITE_PATH=/data/fin-terminal.db
+      - API_ADDR=:8081
+    volumes:
+      - app-data:/data
+
+volumes:
+  questdb-data:
+  app-data:
