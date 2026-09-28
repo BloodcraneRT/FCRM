@@ -27,10 +27,13 @@
    QuestDB (market_bars, news_events, filing_events, github_trends, catalyst_events, source_health)
         │  read
         ▼
-   internal/scoring (Composite) ──► signal_scores, opportunity_scores  (with explanation strings)
+   internal/scoring (ScoreWatchlist, every ingest cycle) ──► signal_scores, opportunity_scores, sector_strength
         │
         ▼
-   internal/simulation (Run) ──► simulation_runs  (expected value per action, per trader-supplied scenario)
+   internal/simulation (Run, manual/CLI only — see below) ──► simulation_runs  (expected value per action, per trader-supplied scenario)
+        │
+        ▼
+   internal/alerts (EvaluateAndPersist, every ingest cycle) ──► alert_events  (price/filing/score-change threshold crossings)
         │
         ▼
    cmd/api  ──►  web/dashboard
@@ -49,8 +52,14 @@ SELECT * FROM opportunity_scores LATEST ON ts PARTITION BY symbol ORDER BY compo
 
 `internal/watchlists` owns a small SQLite DB (`modernc.org/sqlite`, pure Go, no cgo) with three tables: `watchlist_items`, `settings`, `thesis_index`. This is intentionally not versioned/time-series — "what am I tracking" not "what happened."
 
+## Scoring vs. simulation: why only one is automatic
+
+`internal/scoring.ScoreWatchlist` runs every ingest cycle (worker loop and `terminal pull` alike) because its inputs — GitHub star momentum, SEC filing counts, latest quote move, connector health — are all things the platform actually measured. `internal/simulation.Run` deliberately stays manual/CLI-only: its inputs (probability of success, upside/downside case) are a trader's judgment call, not something to be invented by the platform. Auto-generating those would violate the "no black boxes, no invented numbers" principle above just as badly as a hidden ML model would — see `internal/simulation/simulation.go`'s own doc comment ("does not try to guess probabilities or payoffs itself").
+
 ## Known gaps (see also docs/data-sources.md and the run report's Gaps section)
 
 - ILP (line-protocol) ingestion path (`internal/questdb/ilp.go`) exists but connectors currently write via `/exec` SQL inserts for simplicity — fine at current volume, worth switching to ILP (or the official `questdb/go-questdb-client`) once ingesting intraday bars/ticks at real volume.
-- `secedgar.CommonCIKs` is a small hand-seeded ticker→CIK map; verify/extend before relying on it for symbols beyond the largest mega-caps.
+- `secedgar.CommonCIKs` is a small hand-seeded ticker→CIK map, verified once (2026-09-27) against SEC's own `company_tickers.json`; re-verify before extending it further.
 - No auth on `cmd/api` — fine for local/self-hosted use, add a token/reverse-proxy before exposing beyond localhost.
+- `scoring.BuildSectorStrength` only has this run's cross-sectional composite scores to work with, so `momentum_1d`/`momentum_5d`/`momentum_1m` are written as `NaN` — computing them needs a query against `sector_strength`'s own history (yesterday's/last week's/last month's `strength_score` per vertical), not yet implemented.
+- `scoring.ScoreWatchlist`'s signals (GitHub momentum, filing count, single-quote day move) are intentionally simple and will read as near-zero/low-confidence until real connectors (a Finnhub key, a populated GitHub repo list per vertical) are actually running — that's correct behavior (low evidence → low confidence), not a bug, but worth knowing before trusting an early score.

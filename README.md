@@ -17,8 +17,9 @@ go run ./cmd/migrate
 
 go run ./cmd/terminal watchlist add NVDA --vertical semis --note "AI compute demand"
 export SEC_EDGAR_USER_AGENT="fin-terminal you@example.com"
-go run ./cmd/terminal pull
+go run ./cmd/terminal pull          # ingest + auto-score + auto-alert in one step
 go run ./cmd/terminal opportunities
+go run ./cmd/terminal alerts
 
 go run ./cmd/api    # dashboard + JSON API at http://localhost:8081
 ```

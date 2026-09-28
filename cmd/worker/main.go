@@ -12,12 +12,15 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/BloodcraneRT/fin-terminal/internal/alerts"
 	"github.com/BloodcraneRT/fin-terminal/internal/config"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/fred"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
 	"github.com/BloodcraneRT/fin-terminal/internal/questdb"
+	"github.com/BloodcraneRT/fin-terminal/internal/scoring"
 	"github.com/BloodcraneRT/fin-terminal/internal/watchlists"
 )
 
@@ -82,6 +85,7 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 			{OwnerSlashName: "OpenBB-finance/OpenBB", Vertical: "fintech"},
 		}),
 		finnhub.New(cfg.FinnhubAPIKey, symbols),
+		fred.New(cfg.FREDAPIKey, fred.CoreSeries),
 	}
 
 	results := ingest.RunAll(ctx, db, connectors)
@@ -91,5 +95,17 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 		} else {
 			log.Printf("connector %-12s rows=%-4d latency=%-10s ok", r.Source, r.Rows, r.Latency)
 		}
+	}
+
+	scoreItems := make([]scoring.WatchlistItem, 0, len(items))
+	for _, it := range items {
+		scoreItems = append(scoreItems, scoring.WatchlistItem{Symbol: it.Symbol, Vertical: it.Vertical})
+	}
+	scored := scoring.ScoreWatchlist(ctx, db, scoreItems)
+	log.Printf("scoring: computed %d opportunity score(s) from this cycle's data", len(scored))
+
+	fired := alerts.EvaluateAndPersist(ctx, db, scored, alerts.DefaultThresholds())
+	if len(fired) > 0 {
+		log.Printf("alerts: %d alert(s) fired this cycle", len(fired))
 	}
 }

@@ -7,10 +7,13 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/BloodcraneRT/fin-terminal/internal/alerts"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/fred"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
+	"github.com/BloodcraneRT/fin-terminal/internal/scoring"
 )
 
 func (a *app) pullCmd() *cobra.Command {
@@ -42,6 +45,7 @@ func (a *app) pullCmd() *cobra.Command {
 				secedgar.New(userAgent, secWatch),
 				githubtrends.New(a.cfg.GitHubToken, seedRepos()),
 				finnhub.New(a.cfg.FinnhubAPIKey, symbols),
+				fred.New(a.cfg.FREDAPIKey, fred.CoreSeries),
 			}
 
 			results := ingest.RunAll(ctx, a.db, connectors)
@@ -52,6 +56,18 @@ func (a *app) pullCmd() *cobra.Command {
 					errStr = r.Err.Error()
 				}
 				fmt.Printf("%-14s %-10d %-8s %s\n", r.Source, r.Rows, r.Latency.Round(1e6), errStr)
+			}
+
+			scoreItems := make([]scoring.WatchlistItem, 0, len(items))
+			for _, it := range items {
+				scoreItems = append(scoreItems, scoring.WatchlistItem{Symbol: it.Symbol, Vertical: it.Vertical})
+			}
+			scored := scoring.ScoreWatchlist(ctx, a.db, scoreItems)
+			fmt.Printf("scored %d opportunity(ies) from this pull's data - see `terminal opportunities`\n", len(scored))
+
+			fired := alerts.EvaluateAndPersist(ctx, a.db, scored, alerts.DefaultThresholds())
+			if len(fired) > 0 {
+				fmt.Printf("%d alert(s) fired - see `terminal status` or query alert_events\n", len(fired))
 			}
 			return nil
 		},

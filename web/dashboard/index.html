@@ -15,6 +15,7 @@
   .empty { opacity: .5; font-style: italic; }
   .conf-high { color: #2e7d32; } .conf-medium { color: #ef6c00; } .conf-low { color: #9e9e9e; }
   .status-ok { color: #2e7d32; } .status-degraded { color: #ef6c00; } .status-down { color: #c62828; }
+  .sev-info { color: #9e9e9e; } .sev-warning { color: #ef6c00; } .sev-critical { color: #c62828; }
 </style>
 </head>
 <body>
@@ -33,6 +34,11 @@
   <section>
     <h2>Catalyst Timeline</h2>
     <table id="catalysts"><thead><tr><th>When</th><th>Symbol</th><th>Vertical</th><th>Title</th><th>Confidence</th></tr></thead><tbody></tbody></table>
+  </section>
+
+  <section>
+    <h2>Alerts (last 7 days)</h2>
+    <table id="alerts"><thead><tr><th>When</th><th>Symbol</th><th>Type</th><th>Severity</th><th>Message</th></tr></thead><tbody></tbody></table>
   </section>
 
   <section>
@@ -60,6 +66,9 @@ load({url: '/api/v1/sector-strength', target: '#sectors'}, r =>
 
 load({url: '/api/v1/catalysts', target: '#catalysts'}, r =>
   `<tr><td>${(r.ts||'').replace('T',' ').slice(0,16)}</td><td>${r.symbol}</td><td>${r.vertical||''}</td><td>${r.title}</td><td>${r.confidence}</td></tr>`);
+
+load({url: '/api/v1/alerts', target: '#alerts'}, r =>
+  `<tr><td>${(r.ts||'').replace('T',' ').slice(0,16)}</td><td>${r.symbol}</td><td>${r.alert_type}</td><td class="sev-${r.severity}">${r.severity}</td><td>${r.message||''}</td></tr>`);
 
 load({url: '/api/v1/source-health', target: '#health'}, r =>
   `<tr><td>${r.source}</td><td class="status-${r.status}">${r.status}</td><td>${r.latency_ms}</td><td>${r.rows_ingested}</td><td>${(r.ts||'').replace('T',' ').slice(0,16)}</td></tr>`);
