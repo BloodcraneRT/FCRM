@@ -25,6 +25,26 @@ func (a *app) opportunitiesCmd() *cobra.Command {
 	}
 }
 
+func (a *app) alertsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "alerts",
+		Short: "Show recent alerts (price/filing/score-change threshold crossings)",
+		RunE: func(cmd *cobra.Command, args []string) error {
+			r, err := a.db.Query(context.Background(), `
+				SELECT ts, symbol, alert_type, severity, message
+				FROM alert_events
+				WHERE ts > dateadd('d', -7, now())
+				ORDER BY ts DESC
+				LIMIT 50`)
+			if err != nil {
+				return err
+			}
+			printResult(r)
+			return nil
+		},
+	}
+}
+
 func (a *app) catalystsCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "catalysts",

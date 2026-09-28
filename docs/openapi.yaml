@@ -68,6 +68,26 @@ paths:
       summary: Upcoming catalyst events (last day onward)
       responses:
         "200": { description: Catalyst events }
+  /api/v1/alerts:
+    get:
+      summary: Alerts fired in the last 7 days (price/filing/score-change threshold crossings)
+      responses:
+        "200":
+          description: Alert events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    ts: { type: string, format: date-time }
+                    symbol: { type: string }
+                    alert_type: { type: string, enum: [price, volume, news, filing, score_change] }
+                    severity: { type: string, enum: [info, warning, critical] }
+                    message: { type: string }
+                    triggered_value: { type: number }
+                    threshold: { type: number }
   /api/v1/source-health:
     get:
       summary: Latest health snapshot per data connector

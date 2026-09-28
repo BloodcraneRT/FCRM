@@ -33,6 +33,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/v1/opportunities", s.handleOpportunities)
 	s.mux.HandleFunc("GET /api/v1/sector-strength", s.handleSectorStrength)
 	s.mux.HandleFunc("GET /api/v1/catalysts", s.handleCatalysts)
+	s.mux.HandleFunc("GET /api/v1/alerts", s.handleAlerts)
 	s.mux.HandleFunc("GET /api/v1/source-health", s.handleSourceHealth)
 }
 
@@ -79,6 +80,15 @@ func (s *Server) handleCatalysts(w http.ResponseWriter, r *http.Request) {
 		FROM catalyst_events
 		WHERE ts > dateadd('d', -1, now())
 		ORDER BY ts ASC
+		LIMIT 200`)
+}
+
+func (s *Server) handleAlerts(w http.ResponseWriter, r *http.Request) {
+	s.queryToJSON(w, r.Context(), `
+		SELECT ts, symbol, alert_type, severity, message, triggered_value, threshold
+		FROM alert_events
+		WHERE ts > dateadd('d', -7, now())
+		ORDER BY ts DESC
 		LIMIT 200`)
 }
 

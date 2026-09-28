@@ -37,6 +37,7 @@ func main() {
 		a.pullCmd(),
 		a.sectorStrengthCmd(),
 		a.opportunitiesCmd(),
+		a.alertsCmd(),
 		a.catalystsCmd(),
 		a.thesisCmd(),
 		a.simulateCmd(),
