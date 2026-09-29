@@ -34,6 +34,16 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/v1/sector-strength", s.handleSectorStrength)
 	s.mux.HandleFunc("GET /api/v1/catalysts", s.handleCatalysts)
 	s.mux.HandleFunc("GET /api/v1/source-health", s.handleSourceHealth)
+	s.mux.HandleFunc("GET /api/v1/macro", s.handleMacro)
+}
+
+// handleMacro returns the latest observation per macro series.
+func (s *Server) handleMacro(w http.ResponseWriter, r *http.Request) {
+	s.queryToJSON(w, r.Context(), `
+		SELECT ts, series_id, category, title, value
+		FROM macro_series
+		LATEST ON ts PARTITION BY series_id
+		ORDER BY category, series_id`)
 }
 
 func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {

@@ -36,6 +36,7 @@ services:
       - INGEST_INTERVAL=15m
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - FRED_API_KEY=${FRED_API_KEY:-}
       - SEC_EDGAR_USER_AGENT=${SEC_EDGAR_USER_AGENT:-fin-terminal you@example.com}
     volumes:
       - app-data:/data
