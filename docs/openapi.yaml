@@ -73,3 +73,8 @@ paths:
       summary: Latest health snapshot per data connector
       responses:
         "200": { description: Source health rows }
+  /api/v1/macro:
+    get:
+      summary: Latest observation per macro series (FRED)
+      responses:
+        "200": { description: Macro series rows }
