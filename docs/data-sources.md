@@ -41,3 +41,12 @@ Polygon.io/Massive (real-time equities/options/tick), Databento (tick-level), Un
 | `SEC_EDGAR_USER_AGENT` | secedgar connector | Yes (SEC requires a descriptive UA, e.g. `"fin-terminal you@example.com"`) |
 | `FRED_API_KEY` | (planned) FRED connector | Not yet implemented |
 | `QUESTDB_HTTP_ADDR` | all services | No (defaults to `http://localhost:9000`) |
+
+## Added 2026-09-29
+
+| Source | Provides | Key? | Cadence | Reliability | Lands in |
+|---|---|---|---|---|---|
+| Yahoo Finance chart endpoint (`internal/datasources/yahoo`) | Daily OHLCV for stocks, ETFs, indexes (`^GSPC`, `^VIX`, sector ETFs) | none | daily bars, pulled each cycle | Medium: unofficial/undocumented, may rate-limit or change; watch `source_health` | `market_bars` (interval `1d`, source `yahoo`) |
+| MarketWatch RSS (`internal/datasources/rssnews`) | Top-story and market-pulse headlines, ticker-tagged, keyword-scored importance | none | minutes | Medium: headline only, no sentiment model | `news_events` (sentiment NULL, importance low/high) |
+
+`003_dedup_bars_news.sql` enables DEDUP UPSERT KEYS on both tables so re-pulls are idempotent (unverified on a live QuestDB).
