@@ -9,7 +9,9 @@ import (
 
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/rssnews"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/yahoo"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
 )
 
@@ -42,6 +44,8 @@ func (a *app) pullCmd() *cobra.Command {
 				secedgar.New(userAgent, secWatch),
 				githubtrends.New(a.cfg.GitHubToken, seedRepos()),
 				finnhub.New(a.cfg.FinnhubAPIKey, symbols),
+				yahoo.New(yahooInstruments(symbols)),
+				rssnews.New(rssnews.DefaultFeeds(), symbols),
 			}
 
 			results := ingest.RunAll(ctx, a.db, connectors)
@@ -68,4 +72,14 @@ func seedRepos() []githubtrends.Repo {
 		{OwnerSlashName: "ggerganov/llama.cpp", Vertical: "ai-infra"},
 		{OwnerSlashName: "vllm-project/vllm", Vertical: "ai-infra"},
 	}
+}
+
+// yahooInstruments is the keyless daily-bar universe: market benchmarks plus
+// every watchlist ticker (treated as equity).
+func yahooInstruments(symbols []string) []yahoo.Instrument {
+	out := yahoo.DefaultMarketInstruments()
+	for _, s := range symbols {
+		out = append(out, yahoo.Instrument{Symbol: s, AssetClass: "equity"})
+	}
+	return out
 }

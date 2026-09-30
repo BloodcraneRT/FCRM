@@ -15,7 +15,9 @@ import (
 	"github.com/BloodcraneRT/fin-terminal/internal/config"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/rssnews"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/yahoo"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
 	"github.com/BloodcraneRT/fin-terminal/internal/questdb"
 	"github.com/BloodcraneRT/fin-terminal/internal/watchlists"
@@ -67,9 +69,11 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 	}
 
 	var symbols []string
+	instruments := yahoo.DefaultMarketInstruments()
 	var secWatch []secedgar.Watch
 	for _, it := range items {
 		symbols = append(symbols, it.Symbol)
+		instruments = append(instruments, yahoo.Instrument{Symbol: it.Symbol, AssetClass: "equity"})
 		if cik, ok := secedgar.CommonCIKs[it.Symbol]; ok {
 			secWatch = append(secWatch, secedgar.Watch{Symbol: it.Symbol, CIK: cik})
 		}
@@ -82,6 +86,8 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 			{OwnerSlashName: "OpenBB-finance/OpenBB", Vertical: "fintech"},
 		}),
 		finnhub.New(cfg.FinnhubAPIKey, symbols),
+		yahoo.New(instruments),
+		rssnews.New(rssnews.DefaultFeeds(), symbols),
 	}
 
 	results := ingest.RunAll(ctx, db, connectors)
