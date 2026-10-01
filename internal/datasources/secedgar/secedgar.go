@@ -102,8 +102,24 @@ func (c *Connector) fetchOne(ctx context.Context, db *questdb.Client, w Watch) (
 		limit = 20
 	}
 
+	// filing_events has no natural dedup key (several 8-Ks can share a day),
+	// so skip accession numbers already stored for this symbol.
+	seen := map[string]bool{}
+	if r, err := db.Query(ctx, fmt.Sprintf("SELECT accession_no FROM filing_events WHERE symbol = %s", questdbSym(w.Symbol))); err == nil {
+		for _, row := range r.Dataset {
+			if len(row) > 0 {
+				if a, ok := row[0].(string); ok {
+					seen[a] = true
+				}
+			}
+		}
+	}
+
 	rows := 0
 	for i := 0; i < limit; i++ {
+		if seen[recent.AccessionNumber[i]] {
+			continue
+		}
 		filingDate, err := time.Parse("2006-01-02", recent.FilingDate[i])
 		if err != nil {
 			continue

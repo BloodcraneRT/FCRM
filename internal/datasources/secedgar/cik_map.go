@@ -1,6 +1,8 @@
 package secedgar
 
-// CommonCIKs is a small seed map of ticker -> zero-padded CIK for well-known
+// CommonCIKs is a small offline fallback map (verified against SEC
+// company_tickers.json on 2026-09-30; prefer ResolveCIKs for live lookups).
+// It is a small seed map of ticker -> zero-padded CIK for well-known
 // companies, so the platform works out of the box without requiring the user
 // to look up CIKs manually. Extend freely, or resolve CIKs dynamically via
 // https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&company=... for
@@ -13,8 +15,8 @@ var CommonCIKs = map[string]string{
 	"AMZN":  "0001018724",
 	"META":  "0001326801",
 	"TSLA":  "0001318605",
-	"AVAV":  "0000352277",
-	"KTOS":  "0000891019",
+	"AVAV":  "0001368622",
+	"KTOS":  "0001069258",
 	"MP":    "0001801368",
 	"CRCL":  "0001876042",
 	"BE":    "0001664703",

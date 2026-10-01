@@ -41,3 +41,8 @@ Polygon.io/Massive (real-time equities/options/tick), Databento (tick-level), Un
 | `SEC_EDGAR_USER_AGENT` | secedgar connector | Yes (SEC requires a descriptive UA, e.g. `"fin-terminal you@example.com"`) |
 | `FRED_API_KEY` | (planned) FRED connector | Not yet implemented |
 | `QUESTDB_HTTP_ADDR` | all services | No (defaults to `http://localhost:9000`) |
+
+## FRED (macro) — built
+
+Keyless public CSV (`fredgraph.csv`), daily/monthly series, lands in
+`macro_series` (DEDUP on ts+series_id). Series list: `fred.DefaultSeries`.
