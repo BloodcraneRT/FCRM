@@ -13,9 +13,7 @@ import (
 	"time"
 
 	"github.com/BloodcraneRT/fin-terminal/internal/config"
-	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
-	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
-	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
+	"github.com/BloodcraneRT/fin-terminal/internal/connectors"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
 	"github.com/BloodcraneRT/fin-terminal/internal/questdb"
 	"github.com/BloodcraneRT/fin-terminal/internal/watchlists"
@@ -67,24 +65,12 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 	}
 
 	var symbols []string
-	var secWatch []secedgar.Watch
 	for _, it := range items {
 		symbols = append(symbols, it.Symbol)
-		if cik, ok := secedgar.CommonCIKs[it.Symbol]; ok {
-			secWatch = append(secWatch, secedgar.Watch{Symbol: it.Symbol, CIK: cik})
-		}
 	}
+	cs := connectors.Build(ctx, cfg, symbols)
 
-	connectors := []ingest.Connector{
-		secedgar.New(os.Getenv("SEC_EDGAR_USER_AGENT"), secWatch),
-		githubtrends.New(cfg.GitHubToken, []githubtrends.Repo{
-			{OwnerSlashName: "questdb/questdb", Vertical: "data-infra"},
-			{OwnerSlashName: "OpenBB-finance/OpenBB", Vertical: "fintech"},
-		}),
-		finnhub.New(cfg.FinnhubAPIKey, symbols),
-	}
-
-	results := ingest.RunAll(ctx, db, connectors)
+	results := ingest.RunAll(ctx, db, cs)
 	for _, r := range results {
 		if r.Err != nil {
 			log.Printf("connector %-12s rows=%-4d latency=%-10s error=%v", r.Source, r.Rows, r.Latency, r.Err)
