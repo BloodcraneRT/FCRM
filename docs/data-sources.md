@@ -9,10 +9,13 @@ Ranked list from the 2026 research pass. "Implemented" = a connector exists in `
 | **SEC EDGAR** (`internal/datasources/secedgar`) | Company filings (10-K/10-Q/8-K/4/13F) via `data.sec.gov/submissions` | Real-time as filed | None (User-Agent header only) | Clean JSON, ideal | `filing_events` |
 | **GitHub REST API** (`internal/datasources/githubtrends`) | Repo stars/forks as a dev-adoption proxy | On demand / 15min poll | Optional (`GITHUB_TOKEN`, raises 60/hr → 5,000/hr) | Clean JSON | `github_trends` |
 | **Finnhub** (`internal/datasources/finnhub`) | Real-time-ish equity quotes | 60 req/min free tier | Required (`FINNHUB_API_KEY`, free at finnhub.io) | Clean JSON | `market_bars` |
+| **FRED** (`internal/datasources/fred`) | Macro: 10y, 2s10s, fed funds, HY OAS, VIX, WTI, USD, Fed balance sheet | Daily/weekly | None (keyless `fredgraph.csv`) | CSV, trivial | `macro_series` |
+| **Stooq** (`internal/datasources/stooq`) | Keyless daily OHLCV for US equities/ETFs/indexes + default sector ETF set | Daily | None | CSV, trivial; **fragile** (see below) | `market_bars` |
+| **Google News RSS** (`internal/datasources/rssnews`) | Per-ticker headlines with keyword sentiment | Minutes | None | XML, clean | `news_events` |
 
 ## Ranked next connectors to build
 
-1. **FRED** (St. Louis Fed) — free key, ~120 req/min, official macro series (rates, employment, inflation). Feeds a `macro_series` table (not yet in schema) or `sector_strength` context.
+1. ~~FRED~~ — done (keyless CSV). Add the official keyed API later for vintages/revisions.
 2. **USPTO PatentsView** — free, no key, innovation-velocity proxy per company/vertical → `catalyst_events` or a new `patent_filings` table.
 3. **DeFiLlama** — free, effectively unmetered, TVL/yield data for the crypto-infra vertical.
 4. **GDELT** — free, 15-min updates, global news/event/sentiment corpus at BigQuery/flat-file scale → `news_events` with sentiment.
@@ -22,7 +25,7 @@ Ranked list from the 2026 research pass. "Implemented" = a connector exists in `
 
 ## Explicitly avoided / deprioritized
 
-- **Stooq** — no real API, CAPTCHA-blocks bulk automation since 2020. Not viable for a production Go pipeline.
+- **Stooq** — no official API and has blocked bulk automation before (connections were reset from the CI sandbox on 2026-10-01). Kept as a zero-config fallback only; failures surface in `source_health`. Prefer Finnhub/Twelve Data/Databento for anything you trade on.
 - **Yahoo Finance (yfinance-style)** — no official API since 2017, actively rate-limited/blocked, breaks silently. Backfill-only at best.
 - **NewsAPI.org free tier** — license explicitly bars production/commercial use. Prototyping only.
 - **Reddit API** — paid since 2023 for meaningful volume; budget for it if social sentiment becomes a priority signal.

@@ -49,6 +49,8 @@ SELECT * FROM opportunity_scores LATEST ON ts PARTITION BY symbol ORDER BY compo
 
 `internal/watchlists` owns a small SQLite DB (`modernc.org/sqlite`, pure Go, no cgo) with three tables: `watchlist_items`, `settings`, `thesis_index`. This is intentionally not versioned/time-series — "what am I tracking" not "what happened."
 
+- Migration 002 turns on QuestDB DEDUP UPSERT KEYS for `market_bars`, `news_events`, `macro_series` so re-pulling overlapping windows is idempotent. Not yet verified against a live QuestDB.
+
 ## Known gaps (see also docs/data-sources.md and the run report's Gaps section)
 
 - ILP (line-protocol) ingestion path (`internal/questdb/ilp.go`) exists but connectors currently write via `/exec` SQL inserts for simplicity — fine at current volume, worth switching to ILP (or the official `questdb/go-questdb-client`) once ingesting intraday bars/ticks at real volume.
