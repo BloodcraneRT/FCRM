@@ -14,8 +14,11 @@ import (
 
 	"github.com/BloodcraneRT/fin-terminal/internal/config"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/fred"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/rssnews"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/stooq"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
 	"github.com/BloodcraneRT/fin-terminal/internal/questdb"
 	"github.com/BloodcraneRT/fin-terminal/internal/watchlists"
@@ -82,6 +85,9 @@ func runOnce(ctx context.Context, cfg config.Config, db *questdb.Client) {
 			{OwnerSlashName: "OpenBB-finance/OpenBB", Vertical: "fintech"},
 		}),
 		finnhub.New(cfg.FinnhubAPIKey, symbols),
+		stooq.New(append(symbols, stooq.MarketSymbols...)),
+		fred.New(nil),
+		rssnews.New(symbols),
 	}
 
 	results := ingest.RunAll(ctx, db, connectors)
