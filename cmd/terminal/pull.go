@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/finnhub"
+	"github.com/BloodcraneRT/fin-terminal/internal/datasources/fred"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/githubtrends"
 	"github.com/BloodcraneRT/fin-terminal/internal/datasources/secedgar"
 	"github.com/BloodcraneRT/fin-terminal/internal/ingest"
@@ -42,6 +43,7 @@ func (a *app) pullCmd() *cobra.Command {
 				secedgar.New(userAgent, secWatch),
 				githubtrends.New(a.cfg.GitHubToken, seedRepos()),
 				finnhub.New(a.cfg.FinnhubAPIKey, symbols),
+				fred.New(a.cfg.FREDAPIKey, nil),
 			}
 
 			results := ingest.RunAll(ctx, a.db, connectors)
